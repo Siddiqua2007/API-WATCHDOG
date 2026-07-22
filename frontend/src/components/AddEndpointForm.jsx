@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios.js";
+import { useToast } from "../context/ToastContext.jsx";
 
 const AddEndpointForm = ({ onCreated }) => {
   const [form, setForm] = useState({
@@ -9,8 +10,8 @@ const AddEndpointForm = ({ onCreated }) => {
     expectedStatus: 200,
     intervalMins: 5,
   });
-  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { showToast } = useToast();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,7 +20,6 @@ const AddEndpointForm = ({ onCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setSubmitting(true);
 
     try {
@@ -29,9 +29,10 @@ const AddEndpointForm = ({ onCreated }) => {
         intervalMins: Number(form.intervalMins),
       });
       setForm({ name: "", url: "", method: "GET", expectedStatus: 200, intervalMins: 5 });
+      showToast(`"${form.name}" added — it will be checked within a minute.`, "success");
       onCreated?.();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create endpoint.");
+      showToast(err.response?.data?.error || "Failed to create endpoint.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -87,7 +88,6 @@ const AddEndpointForm = ({ onCreated }) => {
       <button type="submit" disabled={submitting}>
         {submitting ? "Adding..." : "Add endpoint"}
       </button>
-      {error && <p style={{ color: "#a82f2f", width: "100%", margin: 0 }}>{error}</p>}
     </form>
   );
 };

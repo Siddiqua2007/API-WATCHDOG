@@ -116,10 +116,10 @@ const createOrEscalateAlerts = async (endpoint, anomalies) => {
 
 const processAnomaliesAndAlerts = async (endpoint, snapshot) => {
   const anomalies = await detectAnomalies(endpoint, snapshot);
-  if (anomalies.length === 0) return [];
+  if (anomalies.length === 0) return { anomalies, alerts: [] };
 
   const alertsNeedingDiagnosis = await createOrEscalateAlerts(endpoint, anomalies);
-  if (alertsNeedingDiagnosis.length === 0) return [];
+  if (alertsNeedingDiagnosis.length === 0) return { anomalies, alerts: [] };
 
   const stats = await getRollingStats(endpoint._id);
   const recentSnapshots = stats.recentSnapshots;
@@ -135,7 +135,6 @@ const processAnomaliesAndAlerts = async (endpoint, snapshot) => {
     await alert.save();
   }
 
-  return alertsNeedingDiagnosis;
+  return { anomalies, alerts: alertsNeedingDiagnosis };
 };
-
 export { detectAnomalies, createOrEscalateAlerts, getRollingStats, percentile, processAnomaliesAndAlerts };

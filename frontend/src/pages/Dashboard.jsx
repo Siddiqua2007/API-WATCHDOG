@@ -1,3 +1,4 @@
+import { useToast } from "../context/ToastContext.jsx";
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios.js";
@@ -10,7 +11,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { user, logout } = useAuth();
-
+  const { showToast } = useToast();
   const fetchEndpoints = useCallback(async () => {
     try {
       const { data } = await api.get("/endpoints");
@@ -29,15 +30,16 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [fetchEndpoints]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Remove this endpoint? This cannot be undone.")) return;
-    try {
-      await api.delete(`/endpoints/${id}`);
-      fetchEndpoints();
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to delete endpoint.");
-    }
-  };
+  const handleDelete = async (id, name) => {
+  if (!window.confirm("Remove this endpoint? This cannot be undone.")) return;
+  try {
+    await api.delete(`/endpoints/${id}`);
+    showToast(`"${name}" removed.`, "success");
+    fetchEndpoints();
+  } catch (err) {
+    showToast(err.response?.data?.error || "Failed to delete endpoint.", "error");
+  }
+};
 
   return (
     <div className="page">
@@ -86,8 +88,8 @@ const Dashboard = () => {
                   </td>
                   <td>{endpoint.latestStatus?.latencyMs ? `${endpoint.latestStatus.latencyMs}ms` : "—"}</td>
                   <td>
-                    <button onClick={() => handleDelete(endpoint._id)} style={{ fontSize: "0.8rem" }}>
-                      Remove
+                    <button onClick={() => handleDelete(endpoint._id, endpoint.name)} style={{ fontSize: "0.8rem" }}>
+                     Remove
                     </button>
                   </td>
                 </tr>

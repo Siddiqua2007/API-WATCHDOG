@@ -2,18 +2,22 @@ import cron from "node-cron";
 import Endpoint from "../models/Endpoint.js";
 import runCheck from "./checker.js";
 import { processAnomaliesAndAlerts } from "./anomalyDetection.js";
+import { logFromPipelineResult } from "./researchLogger.js";
 
-/**
- * Runs one endpoint's check, then runs the Day 3 anomaly/alert/AI pipeline
- * on the resulting snapshot.
- */
 const checkAndAnalyze = async (endpoint) => {
   const snapshot = await runCheck(endpoint);
+
+  let pipelineResult = { anomalies: [], alerts: [] };
   try {
-    await processAnomaliesAndAlerts(endpoint, snapshot);
+    pipelineResult = await processAnomaliesAndAlerts(endpoint, snapshot);
   } catch (err) {
     console.error(`Anomaly pipeline failed for endpoint "${endpoint.name}":`, err.message);
   }
+
+  // RES-only: safe to remove this line entirely if you decide not to pursue
+  // the research/paper track — nothing else depends on it.
+  await logFromPipelineResult(endpoint, snapshot, pipelineResult);
+
   return snapshot;
 };
 
