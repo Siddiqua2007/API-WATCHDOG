@@ -11,6 +11,8 @@ import endpointRoutes from "./routes/endpoints.js";
 import alertRoutes from "./routes/alerts.js";
 import snapshotRoutes from "./routes/snapshots.js";
 
+import testFaultRoutes from "./routes/testFaults.js";
+import researchRoutes from "./routes/research.js";
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -27,7 +29,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/endpoints", endpointRoutes);
 app.use("/api/endpoints/:id", snapshotRoutes);
 app.use("/api/alerts", alertRoutes);
-
+app.use("/test", testFaultRoutes);
+app.use("/api/research/incidents", researchRoutes);
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.originalUrl} not found.` });
 });

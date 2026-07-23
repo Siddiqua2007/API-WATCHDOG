@@ -64,6 +64,46 @@ const getEndpoints = async (req, res, next) => {
   }
 };
 
+const updateEndpoint = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, url, method, expectedStatus, intervalMins, headers, active } = req.body;
+
+    const endpoint = await Endpoint.findOne({ _id: id, owner: req.user.id });
+    if (!endpoint) {
+      return res.status(404).json({ error: "Endpoint not found." });
+    }
+
+    if (url !== undefined) {
+      try {
+        new URL(url);
+      } catch {
+        return res.status(400).json({ error: "url must be a valid absolute URL." });
+      }
+      endpoint.url = url;
+    }
+
+    if (method !== undefined) {
+      if (!ALLOWED_METHODS.includes(method.toUpperCase())) {
+        return res.status(400).json({ error: `method must be one of: ${ALLOWED_METHODS.join(", ")}` });
+      }
+      endpoint.method = method.toUpperCase();
+    }
+
+    if (name !== undefined) endpoint.name = name;
+    if (expectedStatus !== undefined) endpoint.expectedStatus = expectedStatus;
+    if (intervalMins !== undefined) endpoint.intervalMins = intervalMins;
+    if (headers !== undefined) endpoint.headers = headers;
+    if (active !== undefined) endpoint.active = active;
+
+    await endpoint.save();
+
+    return res.status(200).json({ endpoint });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const deleteEndpoint = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -80,4 +120,4 @@ const deleteEndpoint = async (req, res, next) => {
   }
 };
 
-export { createEndpoint, getEndpoints, deleteEndpoint };
+export { createEndpoint, getEndpoints, updateEndpoint, deleteEndpoint };
