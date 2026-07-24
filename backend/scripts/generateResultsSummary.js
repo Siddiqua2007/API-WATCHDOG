@@ -2,6 +2,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import fs from "fs";
 import DetectorLog from "../models/DetectorLog.js";
+import Endpoint from "../models/Endpoint.js";
 
 const computeMetrics = (logs, detectorFlagKey) => {
   let truePositive = 0, falsePositive = 0, falseNegative = 0, trueNegative = 0;
@@ -25,9 +26,18 @@ const pct = (v) => (v === null ? "n/a" : `${(v * 100).toFixed(1)}%`);
 const run = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
 
-  const logs = await DetectorLog.find({ groundTruthLabel: { $ne: null } });
+  // Same fix as scoreDetector.js: only score the dedicated study endpoints,
+  // excluding old demo/testing data that would distort the results.
+  const studyEndpoints = await Endpoint.find({ name: /^Study -/i });
+  const studyEndpointIds = studyEndpoints.map((e) => e._id);
+
+  const logs = await DetectorLog.find({
+    endpointId: { $in: studyEndpointIds },
+    groundTruthLabel: { $ne: null },
+  });
+
   if (logs.length === 0) {
-    console.log("No labeled entries found — run labelDetectorLogs.js first.");
+    console.log("No labeled entries found for study endpoints — run labelDetectorLogs.js first.");
     await mongoose.disconnect();
     return;
   }
@@ -46,6 +56,7 @@ const run = async () => {
   const md = `# Results Summary (auto-generated from DetectorLog)
 
 Generated on: ${new Date().toISOString()}
+Study endpoints included: ${studyEndpoints.map((e) => e.name).join(", ")}
 Total labeled checks scored: ${logs.length}
 
 ## Table 1 — Detector Comparison (Precision / Recall / F1)
